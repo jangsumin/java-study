@@ -1,5 +1,6 @@
 package prob06;
 
+import java.math.MathContext;
 import java.util.Scanner;
 
 public class Calculator {
