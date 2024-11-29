@@ -56,6 +56,7 @@ public class RequestHandler extends Thread {
 			} else {
 				// methods: POST, DELETE, PUT, HEAD, CONNECT, ...
 				// SimpleHttpServer에서는 무시(400 Bad Request)
+				response400Error(outputStream, tokens[2]);
 			}
 
 			// 예제 응답입니다.
@@ -91,7 +92,11 @@ public class RequestHandler extends Thread {
 		File file = new File("./webapp" + url);
 		if (!file.exists()) {
 			// 404 response - 과제
-			accessToPage(os, new File("./webapp/error/404.html"));
+			// 내가 작성한 코드 
+			// accessToPage(os, new File("./webapp/error/404.html"));
+			
+			// 강사님이 작성해주신 코드 
+			response404Error(os, protocol);
 		}
 
 		// nio - Java I/O에 비해 쉬운 I/O
@@ -106,6 +111,14 @@ public class RequestHandler extends Thread {
 		os.write(("Content-Type:" + contentType + "; charset=utf-8\n").getBytes("UTF-8"));
 		os.write("\n".getBytes());
 		os.write(body);
+	}
+	
+	private void response400Error(OutputStream os, String string) {
+		
+	}
+	
+	private void response404Error(OutputStream os, String protocol) {
+	
 	}
 
 	public void consoleLog(String message) {
