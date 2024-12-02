@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChatServer {
-	public static final int PORT = 50001;
+	public static final int PORT = 60000;
 	public static final String HOST_ADDRESS = "0.0.0.0";
 	
 	public static void main(String[] args) {
@@ -19,16 +19,16 @@ public class ChatServer {
 		try {
 			serverSocket = new ServerSocket();
 			serverSocket.bind(new InetSocketAddress(HOST_ADDRESS, PORT));
-			log("시작 [포트 번호:" + PORT + "]");
+			log("start... [port:" + PORT + "]");
 			
-			writerPool = new ArrayList<>(); // 모든 스레드가 공유할 Writer Pool로, 각 스레드의 pw 객체를 여기에 저장한다.
+			writerPool = new ArrayList<>();
 			
 			while (true) {
 				Socket socket = serverSocket.accept();
 				new ChatServerThread(socket, writerPool).start();
 			}
 		} catch (IOException e) {
-			log("에러 :" + e);
+			log("error :" + e);
 		} finally {
 			try {
 				if (serverSocket != null && !serverSocket.isClosed()) {
@@ -41,6 +41,6 @@ public class ChatServer {
 	}
 	
 	public static void log(String message) {
-		System.out.println("서버 " + message);
+		System.out.println("[Chat Server] " + message);
 	}
 }
