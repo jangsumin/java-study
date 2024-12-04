@@ -23,12 +23,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 import chat.ChatServer;
 
 public class ChatWindow {
 	private static final String SERVER_IP = "127.0.0.1";
-	
+
 	private Frame frame;
 	private Panel pannel;
 	private Button buttonSend;
@@ -48,65 +49,65 @@ public class ChatWindow {
 	}
 
 	public void show() {
-		// Button
-		// buttonSend.setBackground(Color.GRAY);
-		buttonSend.setForeground(Color.BLACK);
-		buttonSend.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent actionEvent) {
-				sendMessage();
-			}
-		});
-
-		// Textfield
-		textField.setColumns(80);
-		textField.addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				char keyChar = e.getKeyChar();
-				if (keyChar == KeyEvent.VK_ENTER) {
-					sendMessage();
-				}
-			}
-		});
-
-		// Pannel
-		pannel.setBackground(Color.LIGHT_GRAY);
-		pannel.add(textField);
-		pannel.add(buttonSend);
-		frame.add(BorderLayout.SOUTH, pannel);
-
-		// TextArea
-		textArea.setEditable(false);
-		frame.add(BorderLayout.CENTER, textArea);
-
-		// Frame
-		frame.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				finish();
-			}
-		});
-
-		frame.setVisible(true);
-		frame.pack();
-		
 		try {
 			socket = new Socket();
 			socket.connect(new InetSocketAddress(SERVER_IP, ChatServer.PORT));
-			
+
 			pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "utf-8"), true);
 			br = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));
-			
+
 			this.nickname = promptForNickname(frame);
-			
+
 			updateTextArea(this.nickname + "님 안녕하세요 :)");
-			
+
 			pw.println("join:" + this.nickname);
 			pw.flush();
-			
+
 			new ChatClientThread().start();
+
+			// Button
+			// buttonSend.setBackground(Color.GRAY);
+			buttonSend.setForeground(Color.BLACK);
+			buttonSend.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent actionEvent) {
+					sendMessage();
+				}
+			});
+
+			// Textfield
+			textField.setColumns(80);
+			textField.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyPressed(KeyEvent e) {
+					char keyChar = e.getKeyChar();
+					if (keyChar == KeyEvent.VK_ENTER) {
+						sendMessage();
+					}
+				}
+			});
+
+			// Pannel
+			pannel.setBackground(Color.LIGHT_GRAY);
+			pannel.add(textField);
+			pannel.add(buttonSend);
+			frame.add(BorderLayout.SOUTH, pannel);
+
+			// TextArea
+			textArea.setEditable(false);
+			frame.add(BorderLayout.CENTER, textArea);
+
+			// Frame
+			frame.addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					finish();
+				}
+			});
+
+			frame.setVisible(true);
+			frame.pack();
 		} catch (IOException e) {
-			log("error: " + e);
+			ChatServer.log("에러 발생: " + e);
 		}
 	}
 
@@ -116,9 +117,19 @@ public class ChatWindow {
 		dialog.setLayout(new FlowLayout());
 
 		Label label = new Label("대화방에서 사용할 닉네임 :");
-		TextField textField = new TextField(20);
-		Button submitButton = new Button("Submit");
 
+		TextField textField = new TextField(20);
+		textField.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				char keyChar = e.getKeyChar();
+				if (keyChar == KeyEvent.VK_ENTER) {
+					dialog.dispose();
+				}
+			}
+		});
+
+		Button submitButton = new Button("Submit");
 		submitButton.addActionListener(e -> dialog.dispose());
 
 		dialog.add(label);
@@ -132,18 +143,16 @@ public class ChatWindow {
 
 	private void sendMessage() {
 		String message = textField.getText();
-		
+
 		if ("quit".equals(message)) {
 			finish();
 		}
-		
+
 		pw.println("message:" + message);
 		textField.setText("");
 		textField.requestFocus();
 
-		// ChatClientThread에서 서버로부터 받은 메세지가 있다고 가정하고 작성하는 코드
-		// 나중에 변경해야 하는 코드
-		updateTextArea(nickname +  "님: " + message);
+		updateTextArea(nickname + "님: " + message);
 	}
 
 	private void updateTextArea(String message) {
@@ -152,10 +161,9 @@ public class ChatWindow {
 	}
 
 	private void finish() {
-		// quit 프로토콜 구현
 		pw.println("quit");
 		pw.flush();
-		
+
 		try {
 			if (socket != null && !socket.isClosed()) {
 				socket.close();
@@ -164,7 +172,6 @@ public class ChatWindow {
 			e.printStackTrace();
 		}
 
-		// exit Java application
 		System.exit(0);
 	}
 
@@ -174,7 +181,11 @@ public class ChatWindow {
 			try {
 				String line = null;
 				while ((line = br.readLine()) != null) {
-					updateTextArea(line);
+					if ("join:ok".equals(line)) {
+						log("서버에 접속");
+					} else {
+						updateTextArea(line);
+					}
 				}
 			} catch (IOException e) {
 				log("error: " + e);

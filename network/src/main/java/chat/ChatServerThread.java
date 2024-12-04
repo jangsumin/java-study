@@ -34,7 +34,7 @@ public class ChatServerThread extends Thread {
 				
 				if (request == null) {
 					ChatServer.log("클라이언트로부터 종료");
-					doQuit(pw);
+					removeWriter(pw);
 					break;
 				}
 				
@@ -42,12 +42,10 @@ public class ChatServerThread extends Thread {
 				String[] tokens = request.split(":");
 				if ("join".equals(tokens[0])) {
 					doJoin(tokens[1], pw);
-					doMessage(this.nickname + "님이 입장하였습니다.", pw);
 				} else if ("message".equals(tokens[0])) {
-					doMessage(this.nickname + "님: " + tokens[1], pw);
+					doMessage(tokens[1], pw);
 				} else if ("quit".equals(tokens[0])) {
 					doQuit(pw);
-					doMessage(this.nickname + "님이 퇴장하였습니다.", pw);
 				} else {
 					ChatServer.log("에러: 알 수 없는 요청(" + tokens[0] + ")");
 				}
@@ -69,7 +67,16 @@ public class ChatServerThread extends Thread {
 	
 	private void doJoin(String nickname, Writer writer) {
 		this.nickname = nickname;
-		addWriter(writer);
+		
+		PrintWriter pw = (PrintWriter) writer;
+		
+		String data = nickname + "님이 입장하였습니다.";
+		broadcast(data, pw);
+		
+		addWriter(pw);
+		
+		pw.println("join:ok");
+		pw.flush();
 	}
 	
 	private void addWriter(Writer writer) {
@@ -79,6 +86,11 @@ public class ChatServerThread extends Thread {
 	}
 	
 	private void doMessage(String message, PrintWriter self) {
+		String data = this.nickname + "님: " + message;
+		broadcast(data, self);
+	}
+	
+	private void broadcast(String message, PrintWriter self) {
 		synchronized(sharedWriterPool) {
 			for (Writer writer : sharedWriterPool) {
 				PrintWriter pw = (PrintWriter) writer;
@@ -90,6 +102,15 @@ public class ChatServerThread extends Thread {
 	}
 	
 	private void doQuit(Writer writer) {
+		PrintWriter pw = (PrintWriter) writer;
+		
+		String data = nickname + "님이 퇴장하였습니다.";
+		broadcast(data, pw);
+
+		removeWriter(pw);
+	}
+	
+	private void removeWriter(Writer writer) {
 		synchronized(sharedWriterPool) {			
 			sharedWriterPool.remove(writer);
 		}
